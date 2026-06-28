@@ -1,0 +1,13 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+/.claude
+/.kotlin
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+booking.json
+app/build
