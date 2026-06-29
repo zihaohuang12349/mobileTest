@@ -46,10 +46,14 @@ class ShippingRepository(context: android.content.Context) {
         val rsp = api.listAll(ListShippingRequest(userId))
         if (rsp.code != 0) throw Exception(rsp.msg)
         val data = rsp.data ?: emptyList()
-        dao.insertShipping(data.map { it.toEntity() })
-        dao.insertSegments(data.flatMap { item ->
-            item.segments?.map { it.toEntity(item.id ?: "", item.userId ?: userId) } ?: emptyList()
-        })
+        dao.syncShipping(userId, data.map { it.toEntity() })
+        dao.syncSegments(
+            userId,
+            itineraryIds = data.mapNotNull { it.id }.toSet(),
+            items = data.flatMap { item ->
+                item.segments?.map { it.toEntity(item.id ?: "", item.userId ?: userId) } ?: emptyList()
+            }
+        )
         Log.d("ShippingRepository", "refresh: ${data.size} items")
         data
     }

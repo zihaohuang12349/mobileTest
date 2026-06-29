@@ -93,54 +93,24 @@ fun ShipListScreen(
 
 
     if (state.showCreateDialog) {
-        AlertDialog(
-            onDismissRequest = vm::onDismissCreate,
-            title = { Text("Create Shipment") },
-            text = {
-                OutlinedTextField(
-                    value = state.validityInput,
-                    onValueChange = vm::onValidityInput,
-                    label = { Text("Validity (seconds)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = vm::onConfirmCreate, enabled = !state.creating) {
-                    Text("Confirm")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = vm::onDismissCreate, enabled = !state.creating) {
-                    Text("Cancel")
-                }
-            }
+        ShippingDialog(
+            title = "Create Shipment",
+            value = state.validityInput,
+            onValueChange = vm::onValidityInput,
+            onConfirm = vm::onConfirmCreate,
+            onDismiss = vm::onDismissCreate,
+            confirmEnabled = !state.loading
         )
     }
 
     if (state.showUpdateDialog) {
-        AlertDialog(
-            onDismissRequest = vm::onDismissUpdate,
-            title = { Text("Update Shipment") },
-            text = {
-                OutlinedTextField(
-                    value = state.updateValidityInput,
-                    onValueChange = vm::onUpdateValidityInput,
-                    label = { Text("Validity (seconds)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = vm::onConfirmUpdate, enabled = !state.updating) {
-                    Text("Confirm")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = vm::onDismissUpdate, enabled = !state.updating) {
-                    Text("Cancel")
-                }
-            }
+        ShippingDialog(
+            title = "Update Shipment",
+            value = state.updateValidityInput,
+            onValueChange = vm::onUpdateValidityInput,
+            onConfirm = vm::onConfirmUpdate,
+            onDismiss = vm::onDismissUpdate,
+            confirmEnabled = !state.loading
         )
     }
 
@@ -230,8 +200,7 @@ fun ShipListScreen(
                 )
             }
 
-            val showProgressIndicator = state.loading || state.creating || state.updating || state.deleting
-            if (showProgressIndicator && !state.refreshing) {
+            if (state.loading) {
                 //拦截所有交互
                 Box(
                     modifier = Modifier
@@ -343,6 +312,40 @@ private fun formatCountdown(millis: Long): String {
 }
 
 private fun pad(value: Long): String = value.toString().padStart(2, '0')
+
+@Composable
+private fun ShippingDialog(
+    title: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    confirmEnabled: Boolean
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { Text("Validity (seconds)") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = confirmEnabled) {
+                Text("Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = confirmEnabled) {
+                Text("Cancel")
+            }
+        }
+    )
+}
 
 private fun buildRoute(segments: List<Segment>?): String {
     if (segments.isNullOrEmpty()) return ""

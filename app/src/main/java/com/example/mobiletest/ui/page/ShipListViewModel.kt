@@ -20,9 +20,6 @@ data class ShipListUiState(
     val list: List<ShippingItinerary> = emptyList(),
     val loading: Boolean = false,
     val refreshing: Boolean = false,
-    val creating: Boolean = false,
-    val updating: Boolean = false,
-    val deleting: Boolean = false,
     val message: String = "",
     val showCreateDialog: Boolean = false,
     val validityInput: String = "",
@@ -84,8 +81,7 @@ class ShipListViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun onPullRefresh() {
-        val state = _uiState.value
-        if (state.loading || state.creating || state.updating || state.deleting) return
+        if (_uiState.value.loading) return
         _uiState.update { it.copy(refreshing = true) }
         refresh(silent = true)
     }
@@ -109,16 +105,16 @@ class ShipListViewModel(application: Application) : AndroidViewModel(application
             _uiState.update { it.copy(message = "Please enter valid seconds") }
             return
         }
-        _uiState.update { it.copy(creating = true) }
+        _uiState.update { it.copy(loading = true) }
         viewModelScope.launch {
             repo.create(state.userId, seconds)
                 .onSuccess { data ->
                     _uiState.update {
-                        it.copy(message = "Created: ${data.id}", validityInput = "", showCreateDialog = false, creating = false)
+                        it.copy(message = "Created: ${data.id}", validityInput = "", showCreateDialog = false, loading = false)
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(message = e.message ?: "Create failed", showCreateDialog = false, creating = false) }
+                    _uiState.update { it.copy(message = e.message ?: "Create failed", showCreateDialog = false, loading = false) }
                 }
         }
     }
@@ -128,7 +124,7 @@ class ShipListViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun onDismissUpdate() {
-        if (!_uiState.value.updating) {
+        if (!_uiState.value.loading) {
             _uiState.update { it.copy(showUpdateDialog = false) }
         }
     }
@@ -144,31 +140,31 @@ class ShipListViewModel(application: Application) : AndroidViewModel(application
             _uiState.update { it.copy(message = "Please enter valid seconds") }
             return
         }
-        _uiState.update { it.copy(updating = true) }
+        _uiState.update { it.copy(loading = true) }
         viewModelScope.launch {
             val expiry = (System.currentTimeMillis() / 1000 + seconds).toString()
             repo.update(state.updateTargetId, state.userId, expiry)
                 .onSuccess {
                     _uiState.update {
-                        it.copy(message = "Updated: ${state.updateTargetId}", showUpdateDialog = false, updating = false)
+                        it.copy(message = "Updated: ${state.updateTargetId}", showUpdateDialog = false, loading = false)
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(message = e.message ?: "Update failed", showUpdateDialog = false, updating = false) }
+                    _uiState.update { it.copy(message = e.message ?: "Update failed", showUpdateDialog = false, loading = false) }
                 }
         }
     }
 
     fun onDelete(id: String) {
         val userId = _uiState.value.userId
-        _uiState.update { it.copy(deleting = true) }
+        _uiState.update { it.copy(loading = true) }
         viewModelScope.launch {
             repo.delete(id, userId)
                 .onSuccess {
-                    _uiState.update { it.copy(message = "Deleted: $id", deleting = false) }
+                    _uiState.update { it.copy(message = "Deleted: $id", loading = false) }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(message = e.message ?: "Delete failed", deleting = false) }
+                    _uiState.update { it.copy(message = e.message ?: "Delete failed", loading = false) }
                 }
         }
     }

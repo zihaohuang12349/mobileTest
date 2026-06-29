@@ -23,6 +23,41 @@ interface ShippingDao {
     suspend fun insertSegments(items: List<SegmentEntity>)
 
     @Transaction
+    suspend fun syncShipping(userId: String, items: List<ShippingEntity>) {
+        val newIds = items.map { it.id }.toSet()
+        if (newIds.isEmpty()) {
+            deleteAllShipping(userId)
+        } else {
+            deleteStaleShipping(userId, newIds)
+            insertShipping(items)
+        }
+    }
+
+    @Transaction
+    suspend fun syncSegments(userId: String, itineraryIds: Set<String>, items: List<SegmentEntity>) {
+        if (itineraryIds.isEmpty()) {
+            deleteAllSegments(userId)
+        } else {
+            deleteStaleSegments(userId, itineraryIds)
+            if (items.isNotEmpty()) {
+                insertSegments(items)
+            }
+        }
+    }
+
+    @Query("DELETE FROM shipping WHERE userId = :userId AND id NOT IN (:ids)")
+    suspend fun deleteStaleShipping(userId: String, ids: Set<String>)
+
+    @Query("DELETE FROM segment WHERE userId = :userId AND itineraryId NOT IN (:ids)")
+    suspend fun deleteStaleSegments(userId: String, ids: Set<String>)
+
+    @Query("DELETE FROM shipping WHERE userId = :userId")
+    suspend fun deleteAllShipping(userId: String)
+
+    @Query("DELETE FROM segment WHERE userId = :userId")
+    suspend fun deleteAllSegments(userId: String)
+
+    @Transaction
     suspend fun remove(id: String) {
         deleteSegments(id)
         deleteShipping(id)
